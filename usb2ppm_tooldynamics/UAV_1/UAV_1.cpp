@@ -133,6 +133,10 @@ int HXControl(void)
 	TState cur_TState;
 	CTRL_Input cur_XPCommand;
 	
+
+	//Tool Parameters
+	Vector3 d = {0.0, 0.2, -0.2};
+
 ////////////////////////////////Main Loop T/////////////////////////// //////
 	static LARGE_INTEGER freq;
 	QueryPerformanceFrequency(&freq);
@@ -153,6 +157,8 @@ int HXControl(void)
 	llast.QuadPart = l.QuadPart;
 	double time = (double)(l.QuadPart - initialTick)/cpuFreq;
 	
+
+
 ////////////////////////////////////////Here begin the state polling from Haptic(virtual mass and object), Flyer, Tracker
 	//Get all the States
 
@@ -166,23 +172,19 @@ int HXControl(void)
 	Vector3 x(cur_TState.Translation[0]/1000.0, cur_TState.Translation[1]/1000.0, cur_TState.Translation[2]/1000.0); //in m
 	Vector3 dx(cur_TState.Velocity[0]/1000.0, cur_TState.Velocity[1]/1000.0, cur_TState.Velocity[2]/1000.0); //in m/s
 	Vector3 ddx;
+
 	Matrix33 R(cur_TState.RotationMatrix);// R is from Body frame to Global Frame
 
+	
+	// Calculate the postion of tool
+	Vector3 y = x+R*d;
+	Vector3 dy = x+R*d;
+	Vector3 ddy;
 	
 	//Get Acceleration from Dynamics
 	static double m_hat = 0.55+0.25; // initial estimated mass value
 	static double m_hat2 = 0.55+0.25; // initial estimated mass value
-	Vector3 Dyn=R*e_3*lambda*(-1.0)/m_hat+e_3*g; // dynamics	
-	/*
-	//!!! Choose the rotation matrix!!!//
-	R=R2;// IT'S OK TO USE POSE FROM FLYER ALWAYS!!!!
-
-	//!!! Choose the acceleration!!!//
-	ddx=Dyn;
-	ddx2=Dyn2;
-//	ddx=acc_fil;// IT'S OK TO USE ACC FROM FLYER ALWAYS!!!!
-//	ddx2=acc_fil;
-*/
+	Vector3 Dyn=R*e_3*lambda*(-1.0)/m_hat+e_3*g; // dynamics\
 
 
 	Vector3 yd, yd2;
@@ -278,8 +280,7 @@ int HXControl(void)
 
 	/////Tool dynamics controller implementation
 	//by Jaeyoung Lim
-	//Tool Parameters
-	
+
 	//Parameters
 	double k = 26.0;//3.0;  lag wormming<<<<0.5<<<<occilating //k=4.0 seems to be best for IMU-Vicon 15.02.27
 	double b = sqrt(0.1*m*k);//			  sqrt(4*m*k);//sqrt(0.1*m*k)seems to be best for IMU-Vicon 15.02.27
@@ -289,8 +290,14 @@ int HXControl(void)
 
 	//
 
-	Vector3 e=x-xd;
-	Vector3 de=dx-dxd;
+	Vector3 e=y-yd;
+	Vector3 de=dx-dyd;
+
+	Vector3 Control = (dv+e_3*g*dm_hat*(-1.0)) + (v + e_3*g*m_hat*(-1.0))*alpha-((dx-dxd) + (x-xd)*epsi)*r1;
+		
+	Vector3 Rtv = R.Trans()*Control*(-1.0);
+	w1 = -Rtv.y/lambda;
+	w2 = Rtv.x/lambda;
 
 
 	//keyboard setting!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -298,23 +305,23 @@ int HXControl(void)
 		{
 			char input = _getch();
 			if (input == 'q')
-			{
+			{//Exit all modes
 				cout << "\nExit";
 				Sleep(50);
 				exit(9);
 			}
 
 			else if( input == 'a')
-			{
+			{//Hover on a fixed point
 				mode=2;	index=1;
 			}
 			else if( input == 'b')
-			{
+			{//Move in a desired trajectory
 				mode=2;	index=2;
 				time0 = time;
 			}
 			else if( input == 'c')
-			{
+			{//Land mode
 				mode=2;	index=3;
 			}
 			else if( input == 'd')
