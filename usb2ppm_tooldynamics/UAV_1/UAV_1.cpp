@@ -134,9 +134,6 @@ int HXControl(void)
 	CTRL_Input cur_XPCommand;
 	
 
-	//Tool Parameters
-	Vector3 d = {0.0, 0.2, -0.2};
-
 ////////////////////////////////Main Loop T/////////////////////////// //////
 	static LARGE_INTEGER freq;
 	QueryPerformanceFrequency(&freq);
@@ -176,124 +173,42 @@ int HXControl(void)
 	Matrix33 R(cur_TState.RotationMatrix);// R is from Body frame to Global Frame
 
 	
+	/////Tool dynamics controller implementation
+	// Controller input to the quadrotor is angle input
+	//by Jaeyoung Lim
+	//Parameters
+	Vector3 d(0.0, 0.2, -0.2); //Tool form
+	double k = 26.0;//3.0;  lag wormming<<<<0.5<<<<occilating //k=4.0 seems to be best for IMU-Vicon 15.02.27
+	double b = sqrt(0.1*m*k);//			  sqrt(4*m*k);//sqrt(0.1*m*k)seems to be best for IMU-Vicon 15.02.27
+	double alpha = 100.0;//						 50<<<<steady//100.0 seems to be best for IMU-Vicon 15.02.27
+	double epsi = b/(8*m);//b/(8*m);responsive<<<8<<<steady
+	double r1 = 140.0, r2=0.001;
+	//
+
 	// Calculate the postion of tool
-	Vector3 y = x+R*d;
-	Vector3 dy = x+R*d;
+	Vector3 y = x+R*d;//Position of tool
+	Vector3 dy = dx+R*d;//Velocity of tool
 	Vector3 ddy;
 	
 	//Get Acceleration from Dynamics
 	static double m_hat = 0.55+0.25; // initial estimated mass value
-	static double m_hat2 = 0.55+0.25; // initial estimated mass value
 	Vector3 Dyn=R*e_3*lambda*(-1.0)/m_hat+e_3*g; // dynamics\
 
-
-	Vector3 yd, yd2;
-	Vector3 dyd, dyd2;
-	Vector3 ddyd, ddyd2;
-	Vector3 dddyd, dddyd2;	
+	//Desired position
+	Vector3 yd;//Desired tool postion
+	Vector3 dyd;
+	Vector3 ddyd;
+	Vector3 dddyd;	
 	
 	//Desired trajectories are in Desired.cpp
 	Desired traj(mode, index, time, time0);
 	yd = traj.x;	dyd = traj.v;	ddyd = traj.a;	dddyd = traj.da;
-	
-	/*
-	//Controller Parameters
-	double k = 26.0;//3.0;  lag wormming<<<<0.5<<<<occilating //k=4.0 seems to be best for IMU-Vicon 15.02.27
-	double b = sqrt(0.1*m*k);//			  sqrt(4*m*k);//sqrt(0.1*m*k)seems to be best for IMU-Vicon 15.02.27
-	double alpha = 100.0;//						 50<<<<steady//100.0 seems to be best for IMU-Vicon 15.02.27
-	double epsi = b/(8*m);//b/(8*m);responsive<<<8<<<steady
-	double r1 = 140.0, r2=0.001;
 
-	//UAV
-
-	Vector3 e=x-xd;
-	Vector3 de=dx-dxd;
-
-	double dm_hat = r2*((de*g+e*epsi*g).Dot(e_3)+(de+e*epsi).Dot(ddxd)*(-1.0));
-	Vector3 dv = dddxd*m_hat + ddxd*dm_hat + (ddx-ddxd)*b*(-1.0) + (dx - dxd)*k*(-1.0);
-	Vector3 v = ddxd*m_hat + (dx-dxd)*b*(-1.0) + (x-xd)*k*(-1.0);
-	Vector3 Control = (dv+e_3*g*dm_hat*(-1.0)) + (v + e_3*g*m_hat*(-1.0))*alpha-((dx-dxd) + (x-xd)*epsi)*r1;
-		
-	Vector3 Rtv = R.Trans()*Control*(-1.0);
-	w1 = -Rtv.y/lambda;
-	w2 = Rtv.x/lambda;
-	double dlambda = Rtv.z - alpha*lambda;
-	lambda = max(lambda + T*dlambda,1.0); //avoid being zero
-	m_hat = m_hat+dm_hat*T;
-
-	double thrustValue;
-	double polya = 0.000001301; 
-	double polyb = 0.0011; 
-	double polyc = 0.3604 - lambda;
-	double newton2value = (-polyb+sqrt(polyb*polyb-4*polya*polyc))/(2*polya);
-	thrustValue = newton2value;//193.3*lambda+511.5;//
-
-	//keyboard setting!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	if( _kbhit() )
-		{
-			char input = _getch();
-			if (input == 'q')
-			{
-				cout << "\nExit";
-				Sleep(50);
-				exit(9);
-			}
-
-			else if( input == 'a')
-			{
-				mode=2;	index=1;
-			}
-			else if( input == 'b')
-			{
-				mode=2;	index=2;
-				time0 = time;
-			}
-			else if( input == 'c')
-			{
-				mode=2;	index=3;
-			}
-			else if( input == 'd')
-			{
-				mode=2;	index=4;
-				time0=time;
-			}	
-	
-	}
-	
-	double yawspeed = 2048; //yawspeed = 2048 + compen_w3;// + 3*yawangle;
-	
-//*************************************************Translate all to Flyer's Value**********************************************************
-
-		cur_XPCommand.thrust = max(min(thrustValue,2046),0);
-		cur_XPCommand.pitch = min(max(11.7*w2,-2046),2046); // minus is positive direction   
-		cur_XPCommand.roll = min(max(11.4*w1,-2046),2046); // minus is positive direction   
-		cur_XPCommand.yaw= (yawspeed-2048);//min(max(2048 + compen_w3 -11.4*compen_w3,0),4096);//yawspeed; //  // positve
-		
-//*************************************** Scale down usb2PPM
-//Hard left stick is 0 hard right stick is 1023
-		cur_XPCommand.thrust = cur_XPCommand.thrust/7.7+250;
-		cur_XPCommand.pitch = -1.0*cur_XPCommand.pitch/6.0+512.0; //-30.0 minus is positive direction   
-		cur_XPCommand.roll = cur_XPCommand.roll/6.0+512.0; // minus is positive direction   
-		cur_XPCommand.yaw= cur_XPCommand.yaw/4.0 + 512.0;// min(max(2048 + compen_w3 -11.4*w3,0),4096);//yawspeed;  // positve
-
-		*/
-
-	/////Tool dynamics controller implementation
-	//by Jaeyoung Lim
-
-	//Parameters
-	double k = 26.0;//3.0;  lag wormming<<<<0.5<<<<occilating //k=4.0 seems to be best for IMU-Vicon 15.02.27
-	double b = sqrt(0.1*m*k);//			  sqrt(4*m*k);//sqrt(0.1*m*k)seems to be best for IMU-Vicon 15.02.27
-	double alpha = 100.0;//						 50<<<<steady//100.0 seems to be best for IMU-Vicon 15.02.27
-	double epsi = b/(8*m);//b/(8*m);responsive<<<8<<<steady
-	double r1 = 140.0, r2=0.001;
-
-	//
 
 	Vector3 e=y-yd;
 	Vector3 de=dx-dyd;
 
-	Vector3 Control = (dv+e_3*g*dm_hat*(-1.0)) + (v + e_3*g*m_hat*(-1.0))*alpha-((dx-dxd) + (x-xd)*epsi)*r1;
+	Vector3 Control = (dv+e_3*g*dm_hat*(-1.0)) + (v + e_3*g*m_hat*(-1.0))*alpha-((dx-dxd) + (x-xd)*epsi)*r1; //Controller
 		
 	Vector3 Rtv = R.Trans()*Control*(-1.0);
 	w1 = -Rtv.y/lambda;
