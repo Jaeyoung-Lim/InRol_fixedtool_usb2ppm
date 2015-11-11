@@ -171,19 +171,22 @@ int HXControl(void)
 	Vector3 ddx;
 
 	Matrix33 R(cur_TState.RotationMatrix);// R is from Body frame to Global Frame
+	Matrix33 dR= (R-R_last)/dt;
+	Matrix33 w_cof= R.Trans()*dR;
+	Vector3 w(w_cof.a11, );
+	memcpy(R_last, R);
+	//Calculate omega
+	w=R;//Calculate body rotational velocity omega
+	//Low pass filter?
 
-	
 	/////Tool dynamics controller implementation
 	// Controller input to the quadrotor is angle input
 	//by Jaeyoung Lim
 	//Parameters
-	Vector3 d(0.0, 0.2, -0.2); //Tool form
-	double k = 26.0;//3.0;  lag wormming<<<<0.5<<<<occilating //k=4.0 seems to be best for IMU-Vicon 15.02.27
-	double b = sqrt(0.1*m*k);//			  sqrt(4*m*k);//sqrt(0.1*m*k)seems to be best for IMU-Vicon 15.02.27
-	double alpha = 100.0;//						 50<<<<steady//100.0 seems to be best for IMU-Vicon 15.02.27
-	double epsi = b/(8*m);//b/(8*m);responsive<<<8<<<steady
-	double r1 = 140.0, r2=0.001;
-	//
+	Vector3 d(0.2, 0.0, -0.2); //Tool form
+	static double alpha = sqrt(d.x*d.x + d.z*d.z);
+	Matrix33 sigma(d.z*-1, 0, d.x, 0, alpha, 0, d.x, 0, d.z);
+	static double m_hat = 0.55+0.25; // initial estimated mass value
 
 	// Calculate the postion of tool
 	Vector3 y = x+R*d;//Position of tool
@@ -191,8 +194,7 @@ int HXControl(void)
 	Vector3 ddy;
 	
 	//Get Acceleration from Dynamics
-	static double m_hat = 0.55+0.25; // initial estimated mass value
-	Vector3 Dyn=R*e_3*lambda*(-1.0)/m_hat+e_3*g; // dynamics\
+	//Vector3 Dyn=R*e_3*lambda*(-1.0)/m_hat+e_3*g; // dynamics\
 
 	//Desired position
 	Vector3 yd;//Desired tool postion
@@ -204,16 +206,32 @@ int HXControl(void)
 	Desired traj(mode, index, time, time0);
 	yd = traj.x;	dyd = traj.v;	ddyd = traj.a;	dddyd = traj.da;
 
+	// Controller
+	static double k=1.0; //Position controller constants
+	static double b=0.4;
 
 	Vector3 e=y-yd;
-	Vector3 de=dx-dyd;
+	Vector3 de=dy-dyd;
+	Vector3 ud = de*-1*b-e*k;//Postion control input
+	Vector3 ud_hat = R.Trans()*(de*-1*b-e*k)*(1/m_hat);//Postion control input
+	
+	//nu dot = 
+	Vector3 nu=sigma.Trans()*w;
+	Vector3 dnu;
+	dnu.x = d1*;
+	dnu.y = ;
+	dnu.z = ;
 
-	Vector3 Control = (dv+e_3*g*dm_hat*(-1.0)) + (v + e_3*g*m_hat*(-1.0))*alpha-((dx-dxd) + (x-xd)*epsi)*r1; //Controller
-		
-	Vector3 Rtv = R.Trans()*Control*(-1.0);
-	w1 = -Rtv.y/lambda;
-	w2 = Rtv.x/lambda;
+	//w dot =
+	Vector3 dw = sigma*nu;
+	Vector3 w = sigma*nu;
+	
+	Cur_Tstate.Euler
 
+
+	//Calculate command euler angle
+	//w1 = -Rtv.y/lambda;
+	//w2 = Rtv.x/lambda;
 
 	//keyboard setting!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	if( _kbhit() )
