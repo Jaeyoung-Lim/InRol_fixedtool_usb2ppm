@@ -448,7 +448,7 @@ typedef struct TRACKER_STATE{
 	double		Velocity[3];
 	double      RotationMatrix[ 9 ];
 	double      RotationEuler[ 3 ];
-
+	double		AngularVelocity[3];
 	long long time_to_go;
 	unsigned long long  seqNo;
 }TState;

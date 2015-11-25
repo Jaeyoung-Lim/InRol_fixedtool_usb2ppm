@@ -255,7 +255,7 @@ DWORD WINAPI WriteThreadFunc(LPVOID lpParam)
 
 		free(rtrn);
 		cnt++;
-		printf("data : %s \n", outgoingData);
+		//printf("data : %s \n", outgoingData);
 		//printf("data : %s \n", incomingData);
 		
 		if (cnt == 50){

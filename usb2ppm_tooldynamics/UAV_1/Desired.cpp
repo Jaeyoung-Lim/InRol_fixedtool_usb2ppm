@@ -36,7 +36,7 @@ Desired::Desired(int mode, int index, double time, double time0)
 	{
 		if (index == 1) // for hovering
 		{
-			Vector3 xd(0.0, 0.0, -0.5);
+			Vector3 xd(0.0, 0.0, -1.0);
 			_x= xd;
 		}
 

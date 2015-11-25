@@ -1,25 +1,18 @@
-﻿Build started 2015-11-02 오후 6:29:13.
+﻿Build started 2015-11-26 오전 12:21:31.
      1>Project "C:\Users\Cosmonaut\Documents\SNU\기계시스템설계1\Codes\InRol_fixedtool_usb2ppm\usb2ppm_tooldynamics\UAV_1\UAV_1.vcxproj" on node 2 (build target(s)).
      1>InitializeBuildStatus:
-         Touching "Debug\usb2ppm_v10.unsuccessfulbuild".
+         Creating "Debug\usb2ppm_v10.unsuccessfulbuild" because "AlwaysCreate" was specified.
        ClCompile:
          All outputs are up-to-date.
-         C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\CL.exe /c /I\include /I\utilities\include /I\QuickHaptics\header /I"C:\Program Files\Force Dimension\dhd-3.4.0\include" /I"C:\Program Files\Force Dimension\dhd-3.4.0\external\freeglut\include" /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"StdAfx.h" /Fp"Debug\usb2ppm_v10.pch" /Fo"Debug\\" /Fd"Debug\vc100.pdb" /Gd /TP /analyze- /errorReport:prompt UAV_1.cpp
-         UAV_1.cpp
-     1>c:\users\cosmonaut\documents\snu\기계시스템설계1\codes\inrol_fixedtool_usb2ppm\usb2ppm_tooldynamics\uav_1\uav_1.cpp(214): error C2065: 'dv' : undeclared identifier
-     1>c:\users\cosmonaut\documents\snu\기계시스템설계1\codes\inrol_fixedtool_usb2ppm\usb2ppm_tooldynamics\uav_1\uav_1.cpp(214): error C2065: 'dm_hat' : undeclared identifier
-     1>c:\users\cosmonaut\documents\snu\기계시스템설계1\codes\inrol_fixedtool_usb2ppm\usb2ppm_tooldynamics\uav_1\uav_1.cpp(214): error C2065: 'v' : undeclared identifier
-     1>c:\users\cosmonaut\documents\snu\기계시스템설계1\codes\inrol_fixedtool_usb2ppm\usb2ppm_tooldynamics\uav_1\uav_1.cpp(214): error C2065: 'dxd' : undeclared identifier
-     1>c:\users\cosmonaut\documents\snu\기계시스템설계1\codes\inrol_fixedtool_usb2ppm\usb2ppm_tooldynamics\uav_1\uav_1.cpp(214): error C2065: 'xd' : undeclared identifier
-     1>c:\users\cosmonaut\documents\snu\기계시스템설계1\codes\inrol_fixedtool_usb2ppm\usb2ppm_tooldynamics\uav_1\uav_1.cpp(257): error C2065: 'thrustValue' : undeclared identifier
-     1>c:\users\cosmonaut\documents\snu\기계시스템설계1\codes\inrol_fixedtool_usb2ppm\usb2ppm_tooldynamics\uav_1\uav_1.cpp(257): error C2065: 'thrustValue' : undeclared identifier
-     1>c:\users\cosmonaut\documents\snu\기계시스템설계1\codes\inrol_fixedtool_usb2ppm\usb2ppm_tooldynamics\uav_1\uav_1.cpp(257): error C2065: 'thrustValue' : undeclared identifier
-     1>c:\users\cosmonaut\documents\snu\기계시스템설계1\codes\inrol_fixedtool_usb2ppm\usb2ppm_tooldynamics\uav_1\uav_1.cpp(257): error C2065: 'thrustValue' : undeclared identifier
-     1>c:\users\cosmonaut\documents\snu\기계시스템설계1\codes\inrol_fixedtool_usb2ppm\usb2ppm_tooldynamics\uav_1\uav_1.cpp(258): warning C4244: '=' : conversion from 'double' to 'short', possible loss of data
-     1>c:\users\cosmonaut\documents\snu\기계시스템설계1\codes\inrol_fixedtool_usb2ppm\usb2ppm_tooldynamics\uav_1\uav_1.cpp(259): warning C4244: '=' : conversion from 'double' to 'short', possible loss of data
-     1>c:\users\cosmonaut\documents\snu\기계시스템설계1\codes\inrol_fixedtool_usb2ppm\usb2ppm_tooldynamics\uav_1\uav_1.cpp(260): warning C4244: '=' : conversion from 'double' to 'short', possible loss of data
-     1>Done Building Project "C:\Users\Cosmonaut\Documents\SNU\기계시스템설계1\Codes\InRol_fixedtool_usb2ppm\usb2ppm_tooldynamics\UAV_1\UAV_1.vcxproj" (build target(s)) -- FAILED.
+         All outputs are up-to-date.
+       Link:
+         All outputs are up-to-date.
+         UAV_1.vcxproj -> C:\Users\Cosmonaut\Documents\SNU\기계시스템설계1\Codes\InRol_fixedtool_usb2ppm\usb2ppm_tooldynamics\Debug\usb2ppm_v10.exe
+       FinalizeBuildStatus:
+         Deleting file "Debug\usb2ppm_v10.unsuccessfulbuild".
+         Touching "Debug\usb2ppm_v10.lastbuildstate".
+     1>Done Building Project "C:\Users\Cosmonaut\Documents\SNU\기계시스템설계1\Codes\InRol_fixedtool_usb2ppm\usb2ppm_tooldynamics\UAV_1\UAV_1.vcxproj" (build target(s)).
 
-Build FAILED.
+Build succeeded.
 
-Time Elapsed 00:00:01.23
+Time Elapsed 00:00:00.08

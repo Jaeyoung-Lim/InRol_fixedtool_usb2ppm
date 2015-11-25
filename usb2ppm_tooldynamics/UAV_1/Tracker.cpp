@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Tracker.h"
 #include <algorithm>
+#include "Matrix33.h"
 
 extern HANDLE g_TStateMutex;
 extern TState g_TState;
@@ -51,9 +52,7 @@ int Tracker::Ini(void)
 
   // Set the streaming mode
   MyClient.SetStreamMode( ViconDataStreamSDK::CPP::StreamMode::ClientPull );
-  // MyClient.SetStreamMode( ViconDataStreamSDK::CPP::StreamMode::ClientPullPreFetch );
-  // MyClient.SetStreamMode( ViconDataStreamSDK::CPP::StreamMode::ServerPush );
-
+  
   MyClient.SetAxisMapping(	Direction::Forward, 
 							Direction::Right, 
 							Direction::Down ); // Z-down
@@ -121,15 +120,7 @@ DWORD WINAPI TrackerPollingThreadFunc (LPVOID lpParam)  // The rate is about 100
 	cur_TState.NoOfSegments = pTracker->MyClient.GetSegmentCount(SubjectName).SegmentCount;
 	std::string SegmentName = pTracker->MyClient.GetSegmentName(SubjectName,0).SegmentName;
 
-	/*
-	TState cur_TState2;
-	cur_TState2.FrameNumber = pTracker->MyClient.GetFrameNumber().FrameNumber;
-	cur_TState2.TotalLatency = pTracker->MyClient.GetLatencyTotal().Total;
-	cur_TState2.NoOfSubjects = pTracker->MyClient.GetSubjectCount().SubjectCount;
-	std::string SubjectName2 = pTracker->MyClient.GetSubjectName(1).SubjectName;
-	cur_TState2.NoOfSegments = pTracker->MyClient.GetSegmentCount(SubjectName2).SegmentCount;
-	std::string SegmentName2 = pTracker->MyClient.GetSegmentName(SubjectName2,0).SegmentName;
-	*/
+	
 	//Here calculate velocity
 
 	static LARGE_INTEGER l;
@@ -149,45 +140,49 @@ DWORD WINAPI TrackerPollingThreadFunc (LPVOID lpParam)  // The rate is about 100
 	memcpy(cur_TState.Translation, pTracker->MyClient.GetSegmentGlobalTranslation( SubjectName, SegmentName ).Translation, sizeof(cur_TState.Translation)); // position
 	memcpy(cur_TState.RotationMatrix, pTracker->MyClient.GetSegmentGlobalRotationMatrix( SubjectName, SegmentName ).Rotation, sizeof(cur_TState.RotationMatrix)); // rotation matrix
 	memcpy(cur_TState.RotationEuler, pTracker->MyClient.GetSegmentGlobalRotationEulerXYZ(SubjectName, SegmentName ).Rotation, sizeof(cur_TState.RotationEuler)); //euler angle
-
+	//Euler Sequence and dimension of euler angles
 	static double xlast2[3]  = {0};
 	static double vlast2[3] = {0};
 
-	/*
-	memcpy(cur_TState2.Translation, pTracker->MyClient.GetSegmentGlobalTranslation( SubjectName2, SegmentName2 ).Translation, sizeof(cur_TState2.Translation)); // position
-	memcpy(cur_TState2.RotationMatrix, pTracker->MyClient.GetSegmentGlobalRotationMatrix( SubjectName2, SegmentName2 ).Rotation, sizeof(cur_TState2.RotationMatrix)); // rotation matrix
-	memcpy(cur_TState2.RotationEuler, pTracker->MyClient.GetSegmentGlobalRotationEulerXYZ(SubjectName2, SegmentName2 ).Rotation, sizeof(cur_TState2.RotationEuler)); //euler angle
-	*/
 	//velocity
 	double Wlast = 0.5;
 	cur_TState.Velocity[0] = (1.0-Wlast)*(cur_TState.Translation[0] - xlast[0])/T + Wlast*vlast[0]; 
 	cur_TState.Velocity[1] = (1.0-Wlast)*(cur_TState.Translation[1] - xlast[1])/T + Wlast*vlast[1];
 	cur_TState.Velocity[2] = (1.0-Wlast)*(cur_TState.Translation[2] - xlast[2])/T + Wlast*vlast[2];
 
-	/*
-	cur_TState2.Velocity[0] = (1.0-Wlast)*(cur_TState2.Translation[0] - xlast2[0])/T + Wlast*vlast2[0]; 
-	cur_TState2.Velocity[1] = (1.0-Wlast)*(cur_TState2.Translation[1] - xlast2[1])/T + Wlast*vlast2[1];
-	cur_TState2.Velocity[2] = (1.0-Wlast)*(cur_TState2.Translation[2] - xlast2[2])/T + Wlast*vlast2[2];
-	*/
+	//angular velocity
+	Matrix33 R1(cur_TState.RotationMatrix);// R is from Body frame to Global Frame
+	static Matrix33 R1_last(R1);
+
+	static double a_unit[9] = {1.0,0.0,0.0,
+	0.0,1.0,0.0,
+	0.0,0.0,1.0};
 	
+	Matrix33 R_dot(a_unit);
+	R_dot = (R1 + R1_last*(-1)) / T;
+	Matrix33 Sw1_raw = R1.Trans()*R_dot;
+
+	double Sw_lpf=0.99;
+	static Matrix33 Sw1_last = Sw1_raw;
+	Matrix33 Sw1 = Sw1_raw*(1 - Sw_lpf) + Sw1_last*Sw_lpf;
+	
+	Sw1_last = Sw1;
+	R1_last = R1;
+	Vector3 w1(Sw1.r3.y, Sw1.r1.z, Sw1.r2.x);
+
+	cur_TState.AngularVelocity[0] = w1.x;
+	cur_TState.AngularVelocity[1] = w1.y;
+	cur_TState.AngularVelocity[2] = w1.z;
+
 	memcpy(xlast, cur_TState.Translation, sizeof(xlast));
 	memcpy(vlast, cur_TState.Velocity, sizeof(vlast));
 	
-	/*
-	memcpy(xlast2, cur_TState2.Translation, sizeof(xlast2));
-	memcpy(vlast2, cur_TState2.Velocity, sizeof(vlast2));
-	*/
 
 	// copying TState from cur_TState to g_TState
 	WaitForSingleObject(g_TStateMutex, INFINITE);
 	memcpy(&g_TState, &cur_TState, sizeof(TState));
 	ReleaseMutex(g_TStateMutex);
 
-	/*
-	WaitForSingleObject(g_TStateMutex2, INFINITE);
-	memcpy(&g_TState2, &cur_TState2, sizeof(TState));
-	ReleaseMutex(g_TStateMutex2);
-	*/
-	//Sleep(2);
+	
 	}//while(true)
 }

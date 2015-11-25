@@ -144,6 +144,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.h" />
+    <ClInclude Include="Constants.h" />
     <ClInclude Include="DataStructure.h" />
     <ClInclude Include="Matrix33.h" />
     <ClInclude Include="Obstacle.h" />
