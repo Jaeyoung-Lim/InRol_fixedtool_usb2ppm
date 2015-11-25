@@ -177,15 +177,12 @@ int HXControl(void)
 	Vector3 Euler(phi, theta, psi);
 
 	loop_count++;
-	if(loop_count>100){
-		
-		printf("Roll :%f\tPitch :%f\tYaw :%f\n", Euler.x*180/3.14, Euler.y*180/3.14, Euler.z*180/3.14);
-		loop_count=0;
-	}
+	
 	Vector3 w(cur_TState.AngularVelocity[0], cur_TState.AngularVelocity[1], cur_TState.AngularVelocity[2]);
 	double Sw_array[9]={0, -w.z, w.y,
 						w.z, 0 -w.x,
 						-w.y, w.x, 0};
+	
 	Matrix33 Sw(Sw_array);
 	Vector3 wd;
 	//Vector3 dw; // angular acceleration
@@ -195,18 +192,19 @@ int HXControl(void)
 	Vector3 ddy;
 
 	//Desired position
-	Vector3 yd;//Desired tool postion
+	Vector3 yd;//Desired tool postion0
 	Vector3 dyd;
 	Vector3 ddyd;
 	Vector3 dddyd;		
 	//Desired trajectories are in Desired.cpp
 	Desired traj(mode, index, time, time0);
 	yd = traj.x;	dyd = traj.v;	ddyd = traj.a;	dddyd = traj.da;
-
+	
 	if(Ctrl_Mode == Tool_Ctrl){//Tool Position Control
 		Vector3 e=y-yd; //Tool tip position error [m]
 		Vector3 de=dy-dyd; // Tool tip position velocity error [m/s]
 		Vector3 g_hat = R.Trans()*e_3*g;
+		
 		double sigma_array[9] = {-d.z/alpha, 0, d.x/alpha,
 								0, 1, 0,
 								d.x/alpha, 0, d.z/alpha};
@@ -221,23 +219,24 @@ int HXControl(void)
 		dnu.y = (1/d.z)*(ud_hat.x+g_hat.x+(d.x*nu.x*nu.x+d.x*nu.y*nu.y+d.z*nu.x*nu.z));
 		dnu.x = (1/alpha)*(ud_hat.y-g_hat.y-alpha*nu.y*nu.z);
 		lambda = m*(-ud_hat.z+g_hat.z-d.x*dnu.y-(d.z*nu.x*nu.x+d.z*nu.y*nu.y-d.x*nu.x*nu.z));
-	
+		
 		Vector3 nud = nu+dnu*dt;//nu desired
-	
+		
 		//Calculate command euler angle
 		double gamma_array[9]={1, sin(phi)*sin(theta)/cos(theta), cos(phi)*sin(theta)/cos(theta),
 						0, cos(phi), -sin(phi),
 						0, sin(phi)/cos(theta), cos(phi)/cos(theta)};
 		Matrix33 gamma(gamma_array);
-	
+		wd = sigma*nud;	
+
 		Vector3 dEulerd=gamma*sigma*nud;//dEuler desired
 		Vector3 Eulerd=Euler+dEulerd*dt; //Desired Eueler angles on next step
-
-		 
+		
 		phid= Eulerd.x; //rad
 		thetad = Eulerd.y;
-		psid= Eulerd.z;
+		dpsid= dEulerd.z;
 	}
+
 	if(Ctrl_Mode == Cg_Ctrl){//Center of Mass Control
 		Vector3 e=y-yd; //Tool tip position error [m]
 		Vector3 de=dy-dyd; // Tool tip position velocity error [m/s]
@@ -278,10 +277,20 @@ int HXControl(void)
 	
 //*************************************************Translate all to USB2PPM Command*********************************************************
 		
-		cur_XPCommand.thrust = max(min((lambda+200),1023),0);
+		cur_XPCommand.thrust = max(min((lambda*25+70),1023),0);
 		cur_XPCommand.roll = min(max(phid*652.23+512,0),1023);// thetad 0rad=512pwm 0.785rad=1023pwm   
 		cur_XPCommand.pitch = min(max(thetad*652.23+512,0),1023);
-		cur_XPCommand.yaw= min((psid*652.23+512), 1023);
+		cur_XPCommand.yaw= min((dpsid*652.23+512), 1023);
+		
+		if(loop_count>100){
+		
+		printf("Thrust:%f Roll:%f Pitch:%f Yaw:%f\n", max(min((lambda),1023),0),
+															min(max(phid*652.23+512,0),1023),
+															thetad*652.23+512,
+															dpsid*652.23+512);
+		loop_count=0;
+		}
+		
 		
 //*************************************** Here POST the command to haptic device and flyerzzz
 	

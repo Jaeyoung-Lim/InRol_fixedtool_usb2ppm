@@ -8,12 +8,12 @@ static double alpha = sqrt(d.x*d.x + d.z*d.z);
 	
 
 // Controller Parameters
-static double k=1.0; //Position controller constants
-static double b=0.4;
+static double k=5.0; //Position controller constants
+static double b=1.4;
 
 double thetad;
 double phid;
-double psid;
+double dpsid;
 
 
 int Ctrl_Mode=1;

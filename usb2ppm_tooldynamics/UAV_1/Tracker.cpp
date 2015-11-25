@@ -162,7 +162,7 @@ DWORD WINAPI TrackerPollingThreadFunc (LPVOID lpParam)  // The rate is about 100
 	R_dot = (R1 + R1_last*(-1)) / T;
 	Matrix33 Sw1_raw = R1.Trans()*R_dot;
 
-	double Sw_lpf=0.99;
+	double Sw_lpf=0.999;
 	static Matrix33 Sw1_last = Sw1_raw;
 	Matrix33 Sw1 = Sw1_raw*(1 - Sw_lpf) + Sw1_last*Sw_lpf;
 	

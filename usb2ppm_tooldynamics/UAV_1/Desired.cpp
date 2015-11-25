@@ -56,7 +56,7 @@ Desired::Desired(int mode, int index, double time, double time0)
 			else if (sector == 1)
 			{
 				Vector3 xd(-ll, min(ll, -ll + 3 * ll / dt*mtime), h);
-				Vector3 dxd(0.0, 2 * ll / dt, 0.0);
+				Vector3 dxd(0.0, 2 * ll / +dt, 0.0);
 				_x= xd;	_v= dxd;
 			}
 			else if (sector == 2)
